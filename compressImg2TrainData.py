@@ -33,7 +33,7 @@ img_data = []
 data_label = []
 data_size = {}
 
-for dirname in next(os.walk(TRAIN_DIR))[1]:
+for dirname in sorted(next(os.walk(TRAIN_DIR))[1]):
   data_label.append(dirname)
 
   files = next(os.walk(TRAIN_DIR + "/" + dirname))[2]
@@ -41,7 +41,7 @@ for dirname in next(os.walk(TRAIN_DIR))[1]:
 
   for filename in files:
     img_file = TRAIN_DIR + "/" + dirname + "/" + filename
-    #print(img_file)
+    print(img_file)
     img = cv2.imread(img_file)
     img = cv2.resize(img, (28, 28))
     imgg = cv2.cvtColor(img, cv2.cv.CV_BGR2GRAY)
