@@ -28,7 +28,6 @@ class MakeMnistData:
   def __init__(self):
     self.LABEL_MAGIC_NUMBER = 2049
     self.IMAGE_MAGIC_NUMBER = 2051
-    self.VALIDATION_SIZE = 300
 
     self.data_label = []  # the length is the same with the all data
     self.img_data = []    # the length is the same with the all data
@@ -56,13 +55,16 @@ class MakeMnistData:
 
     self.data_label = list(chain.from_iterable(self.data_label))
 
-  def write(self, dirname):
+  def write(self, dirname, valid_size=0):
+    if valid_size == 0:
+      valid_size = int(len(self.data_label) * 0.05)
+
     # make test data
     test_data_label = []
     test_data_size = [0]*len(self.data_label)
     test_img_data = []
 
-    for i in range(self.VALIDATION_SIZE):
+    for i in range(valid_size):
       ind = random.randint(0, len(self.data_label)-1)
       test_data_label.append(self.data_label[ind])
       test_img_data.append(self.img_data[ind])
@@ -120,7 +122,15 @@ class MakeMnistData:
     with open(dirname + "/label_name.txt", 'w') as f:
       f.write(s)
 
+
 if __name__ == '__main__':
+  from argparse import ArgumentParser
+  parser = ArgumentParser(description="This script makes a train and a validation dataset")
+  parser.add_argument("--in_dir", dest="indir", type=str, default="data")
+  parser.add_argument("--out_dir", dest="outdir", type=str, default="data")
+  parser.add_argument("--valid_size", dest="valsize", type=int, default=0, help="Default size is 5% of all data")
+  args = parser.parse_args()
+  
   mmd = MakeMnistData()
-  mmd.load("data")
-  mmd.write("data")
+  mmd.load(args.indir)
+  mmd.write(args.outdir, args.valsize)
