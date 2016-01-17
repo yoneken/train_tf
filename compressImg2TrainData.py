@@ -18,59 +18,109 @@ TRAIN_DIR:
     img0001.png
 '''
 
-import cv2, os
+import cv2, os, gzip, random
 import numpy as np
+from itertools import chain
 
-LABEL_MAGIC_NUMBER = 2049
-IMAGE_MAGIC_NUMBER = 2051
-TRAIN_DIR = "data"
+class MakeMnistData:
+  '''This class makes a train data set and a test data set for MNIST'''
 
-def _make32(val):
-  # Big endian
-  return [val >> i & 0xff for i in [24,16,8,0]]
+  def __init__(self):
+    self.LABEL_MAGIC_NUMBER = 2049
+    self.IMAGE_MAGIC_NUMBER = 2051
+    self.VALIDATION_SIZE = 300
 
-img_data = []
-data_label = []
-data_size = {}
+    self.data_label = []  # the length is the same with the all data
+    self.img_data = []    # the length is the same with the all data
+    self.data_size = []   # the length is the same with the classes
+    self.label_name = []  # the length is the same with the classes
 
-for dirname in sorted(next(os.walk(TRAIN_DIR))[1]):
-  data_label.append(dirname)
-  print(dirname)
+  def _make32(self, val):
+    # Big endian
+    return [val >> i & 0xff for i in [24,16,8,0]]
 
-  files = next(os.walk(TRAIN_DIR + "/" + dirname))[2]
-  data_size[dirname] = len(files)
+  def load(self, dirname):
+    for i,dname in enumerate(sorted(next(os.walk(dirname))[1])):
+      files = next(os.walk(dirname + "/" + dname))[2]
+      self.data_label.append([i]*len(files))
+      self.data_size.append(len(files))
+      self.label_name.append(dname)
 
-  for filename in files:
-    img_file = TRAIN_DIR + "/" + dirname + "/" + filename
-    #print(img_file)
-    img = cv2.imread(img_file)
-    img = cv2.resize(img, (28, 28))
-    imgg = cv2.cvtColor(img, cv2.cv.CV_BGR2GRAY)
+      for filename in files:
+        img_file = dirname + "/" + dname + "/" + filename
+        img = cv2.imread(img_file)
+        img = cv2.resize(img, (28, 28))
+        imgg = cv2.cvtColor(img, cv2.cv.CV_BGR2GRAY)
 
-    img_data = np.r_[img_data, imgg[:,:].reshape(imgg.size)]
+        self.img_data.append(imgg[:,:].reshape(imgg.size))
 
+    self.data_label = list(chain.from_iterable(self.data_label))
 
-# make a train label data
-# make header
-ldata = _make32(LABEL_MAGIC_NUMBER)
-ldata = np.r_[ldata, _make32(sum(data_size.values()))]
+  def write(self, dirname):
+    # make test data
+    test_data_label = []
+    test_data_size = [0]*len(self.data_label)
+    test_img_data = []
 
-# write value
-for i,v in enumerate(data_label):
-  ldata = np.r_[ldata, [i]*data_size[v]]
+    for i in range(self.VALIDATION_SIZE):
+      ind = random.randint(0, len(self.data_label)-1)
+      test_data_label.append(self.data_label[ind])
+      test_img_data.append(self.img_data[ind])
 
-np.array(ldata, dtype=np.uint8).tofile(TRAIN_DIR + "/labels.idx1-ubyte")
+      sind = self.data_label[ind]
+      self.data_size[sind] = self.data_size[sind] - 1
+      test_data_size[sind] = test_data_size[sind] + 1
+      del self.data_label[ind]
+      del self.img_data[ind]
 
-# make a train image data
-# make header
-idata = _make32(IMAGE_MAGIC_NUMBER)
-idata = np.r_[idata, _make32(sum(data_size.values()))]
-idata = np.r_[idata, _make32(28)]
-idata = np.r_[idata, _make32(28)]
-idata = np.r_[idata, img_data]
+    # make a train label data
+    # make header
+    ldata = self._make32(self.LABEL_MAGIC_NUMBER)
+    ldata = np.r_[ldata, self._make32(sum(self.data_size))]
+    ldata = np.r_[ldata, self.data_label]
 
-np.array(idata, dtype=np.uint8).tofile(TRAIN_DIR + "/images.idx3-ubyte")
+    with gzip.open(dirname + "/train-labels-idx1-ubyte.gz",'wb') as f:
+      f.write(np.array(ldata, dtype=np.uint8))
 
-with open(TRAIN_DIR + "/label_name.txt", 'w') as f:
-  f.write(",".join(["\"" + x + "\"" for x in data_label]))
+    # make a test label data
+    # make header
+    tldata = self._make32(self.LABEL_MAGIC_NUMBER)
+    tldata = np.r_[tldata, self._make32(sum(test_data_size))]
+    tldata = np.r_[tldata, test_data_label]
 
+    with gzip.open(dirname + "/t10k-labels-idx1-ubyte.gz",'wb') as f:
+      f.write(np.array(tldata, dtype=np.uint8))
+
+    # make a train image data
+    # make header
+    idata = self._make32(self.IMAGE_MAGIC_NUMBER)
+    idata = np.r_[idata, self._make32(sum(self.data_size))]
+    idata = np.r_[idata, self._make32(28)]
+    idata = np.r_[idata, self._make32(28)]
+    idata = np.r_[idata, list(chain.from_iterable(self.img_data))]
+
+    # write value
+    with gzip.open(dirname + "/train-images-idx3-ubyte.gz",'wb') as f:
+      f.write(np.array(idata, dtype=np.uint8))
+
+    # make a test image data
+    # make header
+    tidata = self._make32(self.IMAGE_MAGIC_NUMBER)
+    tidata = np.r_[tidata, self._make32(sum(test_data_size))]
+    tidata = np.r_[tidata, self._make32(28)]
+    tidata = np.r_[tidata, self._make32(28)]
+    tidata = np.r_[tidata, list(chain.from_iterable(test_img_data))]
+
+    # write value
+    with gzip.open(dirname + "/t10k-images-idx3-ubyte.gz",'wb') as f:
+      f.write(np.array(tidata, dtype=np.uint8))
+
+    s = ",".join(["\"" + x + "\"" for x in self.label_name])
+    print(s)
+    with open(dirname + "/label_name.txt", 'w') as f:
+      f.write(s)
+
+if __name__ == '__main__':
+  mmd = MakeMnistData()
+  mmd.load("data")
+  mmd.write("data")
