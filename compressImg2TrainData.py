@@ -55,25 +55,31 @@ class MakeMnistData:
 
     self.data_label = list(chain.from_iterable(self.data_label))
 
+    # Shuffle the data
+    tmp_dl = list(self.data_label)
+    tmp_id = list(self.img_data)
+    indices = np.arange(len(self.data_label))
+    np.random.shuffle(indices)
+    for i in range(len(self.data_label)):
+      self.data_label[i] = tmp_dl[indices[i]]
+      self.img_data[i] = tmp_id[indices[i]]
+
   def write(self, dirname, valid_size=0):
     if valid_size == 0:
       valid_size = int(len(self.data_label) * 0.05)
 
     # make test data
-    test_data_label = []
-    test_data_size = [0]*len(self.data_label)
-    test_img_data = []
+    test_data_label = self.data_label[:valid_size]
+    test_img_data = self.img_data[:valid_size]
+    self.data_label = self.data_label[valid_size:]
+    self.img_data = self.img_data[valid_size:]
+
+    test_data_size = [0]*len(self.data_size)
 
     for i in range(valid_size):
-      ind = random.randint(0, len(self.data_label)-1)
-      test_data_label.append(self.data_label[ind])
-      test_img_data.append(self.img_data[ind])
-
-      sind = self.data_label[ind]
-      self.data_size[sind] = self.data_size[sind] - 1
-      test_data_size[sind] = test_data_size[sind] + 1
-      del self.data_label[ind]
-      del self.img_data[ind]
+      ind = test_data_label[i]
+      self.data_size[ind] = self.data_size[ind] - 1
+      test_data_size[ind] = test_data_size[ind] + 1
 
     # make a train label data
     # make header
