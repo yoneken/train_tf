@@ -26,9 +26,12 @@ import numpy
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
-from tensorflow.examples.tutorials.mnist import input_data
-from tensorflow.examples.tutorials.mnist import FourLayeredFFNN
-from tensorflow.examples.tutorials.mnist import FourLayeredFFCNN
+#from tensorflow.examples.tutorials.mnist import input_data
+#from tensorflow.examples.tutorials.mnist.mnist import FourLayeredFFNN
+#from tensorflow.examples.tutorials.mnist.mnist_cnn import FourLayeredFFCNN
+import input_data
+from mnist import FourLayeredFFNN
+from mnist_cnn import FourLayeredFFCNN
 
 
 # Basic model parameters as external flags.

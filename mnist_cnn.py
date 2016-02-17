@@ -160,7 +160,7 @@ class FourLayeredFFCNN(Net):
       A scalar float32 tensor with the number of examples (out of batch_size)
       that were predicted correctly.
     """
-    correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
+    correct_prediction = tf.nn.in_top_k(logits, tf.argmax(labels, 1), 1)
     accuracy = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
     tf.scalar_summary("accuracy", accuracy)
     return accuracy
