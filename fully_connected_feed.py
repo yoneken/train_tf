@@ -150,7 +150,8 @@ def run_training():
           FLAGS.batch_size, mnist.IMAGE_PIXELS)
 
     # Initialize network
-    mnist.init(images_placeholder, labels_placeholder, FLAGS.learning_rate)
+    mnist.init_net(images_placeholder, labels_placeholder, FLAGS.learning_rate)
+    mnist.init_val()
 
     # Build the summary operation based on the TF collection of Summaries.
     summary_op = tf.merge_all_summaries()

@@ -179,3 +179,9 @@ class FourLayeredFFCNN(Net):
     true_count = self._sess.run(self._eval_op,
                                 feed_dict=feed_dict)
     return true_count
+
+  def test(self, feed_dict):
+    feed_dict[self._keep_prob] = 1.0
+    result = self._sess.run(self.logits,
+                                feed_dict=feed_dict)
+    return result

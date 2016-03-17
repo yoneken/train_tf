@@ -45,6 +45,7 @@ class Net(object):
 
     # Create a session for running Ops on the Graph.
     self._sess = tf.Session()
+    #self._sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
   @property
   def NUM_CLASSES(self):
@@ -121,22 +122,26 @@ class Net(object):
     """
     pass
 
-  def init(self, images_placeholder, labels_placeholder, learning_rate):
+  def init_net(self, images_placeholder, labels_placeholder, learning_rate):
 
     # Build a Graph that computes predictions from the inference model.
-    logits = self.inference(images_placeholder)
+    self.logits = self.inference(images_placeholder)
 
     # Add to the Graph the Ops for loss calculation.
-    self._loss_op = self.loss(logits, labels_placeholder)
+    self._loss_op = self.loss(self.logits, labels_placeholder)
 
     # Add to the Graph the Ops that calculate and apply gradients.
     self._train_op = self.training(self._loss_op, learning_rate)
 
     # Add the Op to compare the logits to the labels during evaluation.
-    self._eval_op = self.evaluation(logits, labels_placeholder)
+    self._eval_op = self.evaluation(self.logits, labels_placeholder)
 
-    # Run the Op to initialize the variables.
-    init_val = tf.initialize_all_variables()
+  def init_val(self, val=None):
+    if val is None:
+      # Run the Op to initialize the variables.
+      init_val = tf.initialize_all_variables()
+    else:
+      init_val = val
     self._sess.run(init_val)
 
   def run(self, ops, feed_dict):
@@ -151,4 +156,9 @@ class Net(object):
     true_count = self._sess.run(self._eval_op,
                                 feed_dict=feed_dict)
     return true_count
+
+  def test(self, feed_dict):
+    result = self._sess.run(self.logits,
+                                feed_dict=feed_dict)
+    return result
 
